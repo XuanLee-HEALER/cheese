@@ -8,6 +8,18 @@ import (
 )
 
 func FetchTextFrom(node *html.Node) string {
+	if node.FirstChild.Type == html.TextNode {
+		return node.FirstChild.Data
+	}
+	return ""
+}
+
+func FetchAttrVal(node *html.Node, attrName string) string {
+	for _, attr := range node.Attr {
+		if attr.Key == attrName {
+			return attr.Val
+		}
+	}
 	return ""
 }
 
@@ -16,10 +28,11 @@ func QueryAllBySelector(node *html.Node, nTag string, nClass []string) []*html.N
 
 	if node.Type == html.ElementNode && node.Data == nTag && classMatch(node, nClass) {
 		res = append(res, node)
+		return res
 	}
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
 		eles := QueryAllBySelector(c, nTag, nClass)
-		if len(res) != 0 {
+		if len(eles) != 0 {
 			res = append(res, eles...)
 		}
 	}

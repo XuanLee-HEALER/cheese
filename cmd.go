@@ -38,7 +38,21 @@ func main() {
 	}
 	log.Info("find div ", content.Data)
 	avatars := tools.QueryAllBySelector(content, "a", []string{})
-	fmt.Println(avatars)
+	fmt.Println("role number: ", len(avatars))
+
+	roleUrl := make(map[string]string)
+	for _, avatar := range avatars {
+		titleNode, err := tools.QueryBySelector(avatar, "div", []string{"collection-avatar__title"})
+		if err != nil {
+			log.Fatal("query error")
+		}
+		name := tools.FetchTextFrom(titleNode)
+		url := tools.FetchAttrVal(avatar, "href")
+		roleUrl[name] = url
+	}
+	for k, v := range roleUrl {
+		fmt.Println("role: ", k, " url: ", v)
+	}
 }
 
 func fetchRoleHtml(ctx context.Context) {

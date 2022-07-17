@@ -15,7 +15,7 @@ func main() {
 	log.Info("write to %d bytes.", i)
 }
 
-func writeStrToNewFile(fname string, content string, buf int) (int, error) {
+func writeStrToNewFile(fname string, content string) (int, error) {
 	f, err := os.Create(fname)
 	if err != nil {
 		return 0, err
