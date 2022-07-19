@@ -5,7 +5,17 @@ import (
 	"log"
 
 	"github.com/go-mysql-org/go-mysql/client"
+	"github.com/go-mysql-org/go-mysql/mysql"
 )
+
+type RoleUrl struct {
+	RoleName string
+	RoleUrl  string
+}
+
+func (ru RoleUrl) String() string {
+	return fmt.Sprintf("RoleUrl: name={%s} url={%s}", ru.RoleName, ru.RoleUrl)
+}
 
 type Db struct {
 	conn *client.Conn
@@ -52,6 +62,32 @@ func (db Db) SelectRoleUrlByName(roleName string) (string, error) {
 	res, err := r.GetString(0, 0)
 	if err != nil {
 		return "", err
+	}
+	return res, nil
+}
+
+func (db Db) SelectAllRoleUrl() ([]RoleUrl, error) {
+	var res = []RoleUrl{}
+	var sql string = "select roleName, roleUrl from role_url"
+	var r mysql.Result
+	err := db.conn.ExecuteSelectStreaming(sql, &r, func(row []mysql.FieldValue) error {
+		var tRoleName, tRoleurl string
+		for idx, field := range row {
+			if string(r.Fields[idx].Name) == "roleName" {
+				tRoleName = string(field.AsString())
+			}
+			if string(r.Fields[idx].Name) == "roleUrl" {
+				tRoleurl = string(field.AsString())
+			}
+		}
+		res = append(res, RoleUrl{
+			RoleName: tRoleName,
+			RoleUrl:  tRoleurl,
+		})
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }

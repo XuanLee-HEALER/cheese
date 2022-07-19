@@ -4,6 +4,7 @@ import (
 	"cheese/dbop/ori"
 	"cheese/tools"
 	"context"
+	"time"
 
 	"github.com/chromedp/chromedp"
 	"github.com/labstack/gommon/log"
@@ -16,7 +17,16 @@ func main() {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 	// fetchRoleHtml(ctx)
-	fetchRoleDetailHtml("刻晴", ctx)
+
+	roles, err := ori.DbInst.SelectAllRoleUrl()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, role := range roles {
+		fetchRoleDetailHtml(role.RoleName, role.RoleUrl, ctx)
+		time.Sleep(time.Second * 3)
+	}
+
 	// f, err := os.Open("role.html")
 	// if err != nil {
 	// 	log.Fatal("open file error")
@@ -73,22 +83,18 @@ func fetchRoleHtml(ctx context.Context) {
 	log.Info("html content length is ", i)
 }
 
-func fetchRoleDetailHtml(roleName string, ctx context.Context) {
+func fetchRoleDetailHtml(fName string, url string, ctx context.Context) {
 	const baseUrl = "https://bbs.mihoyo.com"
-	detail, err := ori.DbInst.SelectRoleUrlByName(roleName)
-	if err != nil {
-		log.Fatalf("query url error{%s}\n", err)
-	}
-	detail = baseUrl + detail
+	var fetchUrl string = baseUrl + url
 	var htmlContent string
 	if err := chromedp.Run(ctx,
-		chromedp.Navigate(detail),
+		chromedp.Navigate(fetchUrl),
 		chromedp.OuterHTML("html", &htmlContent, chromedp.ByQuery),
 	); err != nil {
 		log.Fatal(err)
 	}
 
-	i, err := tools.WriteStrToNewFile("roledetail/"+roleName+".html", htmlContent)
+	i, err := tools.WriteStrToNewFile("roledetail/"+fName+".html", htmlContent)
 	if err != nil {
 		log.Fatal("write file error!")
 	}
