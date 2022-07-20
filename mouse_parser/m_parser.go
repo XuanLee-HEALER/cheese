@@ -72,20 +72,40 @@ func (p *MouseParser) ReadTag(tagName string, attrs map[string]string) (*html.No
 	return nil, NewMouseParserError("tag not found.")
 }
 
-func (p *MouseParser) ReadTags(tagName string, attrs map[string]string) []*html.Node {
-	return nil
+func (p *MouseParser) ReadTags(tagName string, attrs map[string]string) ([]*html.Node, error) {
+	var t *html.Node = p.cur
+	r, err := p.readTags(tagName, attrs)
+	p.cur = t
+	return r, err
 }
 
-func (p *MouseParser) ReadTagFrom(pTagName string, pAttrs map[string]string, tagName string, attrs map[string]string) *html.Node {
-	return nil
+func (p *MouseParser) readTags(tagName string, attrs map[string]string) ([]*html.Node, error) {
+	res := []*html.Node{}
+
+	if p.cur.Type == html.ElementNode && p.cur.Data == tagName && attrsMatch(attrs, p.cur) {
+		var cp *html.Node = p.cur
+		res = append(res, cp)
+	}
+	for c := p.cur.FirstChild; c != nil; c = c.NextSibling {
+		p.cur = c
+		ns, err := p.readTags(tagName, attrs)
+		if err == nil {
+			res = append(res, ns...)
+		}
+	}
+
+	if len(res) == 0 {
+		return res, NewMouseParserError("tags not found")
+	}
+	return res, nil
 }
 
-func (p *MouseParser) ReadTagsFrom(pTagName string, pAttrs map[string]string, tagName string, attrs map[string]string) []*html.Node {
-	return nil
-}
-
-func (p *MouseParser) ReadTextFrom(tagName string, attrs map[string]string) string {
-	return ""
+func (p *MouseParser) ReadTextFrom(node *html.Node) (string, error) {
+	var sub *html.Node = node.FirstChild
+	if sub.Type == html.TextNode {
+		return sub.Data, nil
+	}
+	return "", NewMouseParserError("text not found")
 }
 
 func attrsMatch(attrs map[string]string, node *html.Node) bool {
@@ -104,8 +124,10 @@ func attrsMatch(attrs map[string]string, node *html.Node) bool {
 
 func extractAttrsFromNode(node *html.Node) map[string]string {
 	var res map[string]string = make(map[string]string)
-	for _, attr := range node.Attr {
-		res[attr.Key] = attr.Val
+	if node.Type == html.ElementNode {
+		for _, attr := range node.Attr {
+			res[attr.Key] = attr.Val
+		}
 	}
 	return res
 }
