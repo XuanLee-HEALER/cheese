@@ -56,6 +56,10 @@ func (p *MouseParser) Reset() {
 	p.cur = p.root
 }
 
+func (p *MouseParser) SetHead(n *html.Node) {
+	p.cur = n
+}
+
 func (p *MouseParser) ReadTag(tagName string, attrs map[string]string) (*html.Node, error) {
 	if p.cur.Type == html.ElementNode && p.cur.Data == tagName && attrsMatch(attrs, p.cur) {
 		return p.cur, nil
