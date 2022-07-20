@@ -2,9 +2,11 @@ package main
 
 import (
 	"cheese/dbop/ori"
+	"cheese/entity"
+	mouseparser "cheese/mouse_parser"
 	"cheese/tools"
 	"context"
-	"time"
+	"fmt"
 
 	"github.com/chromedp/chromedp"
 	"github.com/labstack/gommon/log"
@@ -14,18 +16,30 @@ import (
 const roleUrl = "https://bbs.mihoyo.com/ys/obc/channel/map/189/25"
 
 func main() {
-	ctx, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
-	// fetchRoleHtml(ctx)
-
-	roles, err := ori.DbInst.SelectAllRoleUrl()
+	const basePath = "./roledetail/"
+	ru, err := ori.DbInst.SelectAllRoleUrl()
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, role := range roles {
-		fetchRoleDetailHtml(role.RoleName, role.RoleUrl, ctx)
-		time.Sleep(time.Second * 3)
+	rChan := make(chan entity.Role, len(ru))
+	for _, e := range ru {
+		go ParseRolePage(basePath+e.RoleName+".html", rChan)
 	}
+	for e := range rChan {
+		fmt.Println(e)
+	}
+	// ctx, cancel := chromedp.NewContext(context.Background())
+	// defer cancel()
+	// fetchRoleHtml(ctx)
+
+	// roles, err := ori.DbInst.SelectAllRoleUrl()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// for _, role := range roles {
+	// 	fetchRoleDetailHtml(role.RoleName, role.RoleUrl, ctx)
+	// 	time.Sleep(time.Second * 3)
+	// }
 
 	// f, err := os.Open("role.html")
 	// if err != nil {
@@ -65,6 +79,92 @@ func main() {
 	// 		log.Errorf("insert k{%s} v{%s} error{%s}\n", k, v, err)
 	// 	}
 	// }
+}
+
+func ParseRolePage(filename string, ch chan<- entity.Role) {
+	// defer func() {
+	// 	if err := recover(); err != nil {
+	// 		log.Error("parse ", filename, " error occured! ", err)
+	// 		ch <- entity.Role{}
+	// 		close(ch)
+	// 	}
+	// }()
+	exData := make(map[string]string)
+
+	p, err := mouseparser.NewParser(filename)
+	if err != nil {
+		log.Error("init parser error")
+		panic(err)
+	}
+
+	attrs := make(map[string]string)
+	attrs["class"] = "obc-tmp-character__box"
+	cr, err := p.ReadTag("div", attrs)
+	if err != nil {
+		log.Error("read role div error")
+		panic(err)
+	}
+
+	attrs["class"] = "obc-tmp-character__box--title"
+	c, err := p.ReadTag("p", attrs)
+	if err != nil {
+		log.Error("read name p error")
+		panic(err)
+	}
+	str, err := p.ReadTextFrom(c)
+	if err != nil {
+		log.Error("read name text error")
+		panic(err)
+	}
+	exData["姓名"] = str
+
+	p.SetHead(cr)
+	attrs["class"] = "obc-tmp-character__property"
+	_, err = p.ReadTag("div", attrs)
+	if err != nil {
+		log.Error("read role info div error")
+		panic(err)
+	}
+
+	attrs["class"] = "obc-tmp-character__key"
+	ns, err := p.ReadTags("div", attrs)
+	if err != nil {
+		log.Error("read role attr div error")
+		panic(err)
+	}
+	keys := make([]string, len(ns))
+	for _, n := range ns {
+		t, _ := p.ReadTextFrom(n)
+		keys = append(keys, t)
+	}
+	// fmt.Printf("%v", keys)
+
+	attrs["class"] = "obc-tmp-character__value"
+	ns, err = p.ReadTags("div", attrs)
+	if err != nil {
+		log.Error("read role attr value div error")
+		panic(err)
+	}
+	values := make([]string, len(ns))
+	for _, n := range ns {
+		t, _ := p.ReadTextFrom(n)
+		values = append(values, t)
+	}
+
+	for i, e := range keys {
+		exData[e] = values[i]
+	}
+
+	// fmt.Printf("%v", exData)
+	ch <- entity.Role{
+		Name:    exData["姓名"],
+		Birth:   entity.NewRoleBirth(exData["生日"]),
+		From:    exData["所属"],
+		Feature: exData["定位"],
+		Weapon:  entity.FromWeapon(exData["武器类型"]),
+		Destiny: exData["命之座"],
+		Dub:     exData["称号"],
+	}
 }
 
 func fetchRoleHtml(ctx context.Context) {
