@@ -58,3 +58,24 @@ type Role struct {
 func (r Role) String() string {
 	return fmt.Sprintf("【姓名】：%s\n【元素】：%s\n【生日】：%s\n【故乡】：%s\n【特点】：%s\n【武器类型】：%s\n【命座】：%s\n【称号】：%s\n", r.Name, ToElementType(r.ElementType), r.Birth, r.From, r.Feature, ToWeapon(r.Weapon), r.Destiny, r.Dub)
 }
+
+func (r Role) ToInsert() string {
+	return fmt.Sprintf(`
+	insert into role(
+		name, 
+		elementType, 
+		birth, 
+		fromWhere, 
+		feature, 
+		weapon, 
+		destiny, 
+		dub) values (%s, %d, %s, %s, %s, %d, %s, %s)`, r.Name, r.ElementType, r.Birth, r.From, r.Feature, r.Weapon, r.Destiny, r.Dub)
+}
+
+// func (r Role) ToUpdate() string {
+
+// }
+
+// func (r Role) ToDelete() string {
+
+// }
