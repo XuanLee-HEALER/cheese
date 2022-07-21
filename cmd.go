@@ -1,12 +1,10 @@
 package main
 
 import (
-	"cheese/dbop/ori"
 	"cheese/entity"
 	mouseparser "cheese/mouse_parser"
 	"cheese/tools"
 	"context"
-	"fmt"
 
 	"github.com/chromedp/chromedp"
 	"github.com/labstack/gommon/log"
@@ -16,18 +14,18 @@ import (
 const roleUrl = "https://bbs.mihoyo.com/ys/obc/channel/map/189/25"
 
 func main() {
-	const basePath = "./roledetail/"
-	ru, err := ori.DbInst.SelectAllRoleUrl()
-	if err != nil {
-		log.Fatal(err)
-	}
-	rChan := make(chan entity.Role, len(ru))
-	for _, e := range ru {
-		go ParseRolePage(basePath+e.RoleName+".html", rChan)
-	}
-	for e := range rChan {
-		fmt.Println(e)
-	}
+	// const basePath = "./roledetail/"
+	// ru, err := ori.DbInst.SelectAllRoleUrl()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// rChan := make(chan entity.Role, len(ru))
+	// for _, e := range ru {
+	// 	go ParseRolePage(basePath+e.RoleName+".html", rChan)
+	// }
+	// for e := range rChan {
+	// 	fmt.Println(e)
+	// }
 	// ctx, cancel := chromedp.NewContext(context.Background())
 	// defer cancel()
 	// fetchRoleHtml(ctx)
