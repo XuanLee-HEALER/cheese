@@ -65,8 +65,12 @@ func (db Db) updateMany(sql string) (int, error) {
 	return 0, nil
 }
 
-func (db Db) delete(sql string) (int, error) {
-	return 0, nil
+func (db Db) Delete(sql string) (int, error) {
+	r, err := db.conn.Execute(sql)
+	if err != nil {
+		return 0, err
+	}
+	return int(r.AffectedRows), nil
 }
 
 func (db Db) Query(sql string, trans ToStructVal) ([]any, error) {

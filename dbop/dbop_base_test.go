@@ -62,3 +62,33 @@ func TestInsertMany(t *testing.T) {
 		t.Error("insert error")
 	}
 }
+
+func TestDelete(t *testing.T) {
+	rus := []entity.RoleUrl{
+		{
+			RoleName: "test",
+		},
+		{
+			RoleName: "test1",
+		},
+		{
+			RoleName: "test2",
+		},
+		{
+			RoleName: "test3",
+			RoleUrl:  "test.html",
+		},
+	}
+	sql, err := entity.RoleUrlToDelete(rus...)
+	t.Log("sql:", sql)
+	if err != nil {
+		t.Error(err)
+	}
+	r, err := dbop.DbInst.Delete(sql)
+	if err != nil {
+		t.Error(err)
+	}
+	if r != len(rus) {
+		t.Error("insert error")
+	}
+}
