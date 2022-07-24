@@ -25,3 +25,9 @@ func Filter(os []any, f func(any) bool) []any {
 	}
 	return cp
 }
+
+func StringTo(strs []string, f func(string) string) {
+	for i := 0; i < len(strs); i++ {
+		strs[i] = f(strs[i])
+	}
+}

@@ -12,3 +12,11 @@ func TestWriteToNewFile(t *testing.T) {
 	}
 	t.Logf("write %d bytes\n", wb)
 }
+
+func TestFindAll(t *testing.T) {
+	all := tools.FindAll("AToB", `[A-Z][a-z]*`)
+	t.Logf("find result: %v\n", all)
+	if len(all) != 3 {
+		t.Error("find wrong")
+	}
+}
