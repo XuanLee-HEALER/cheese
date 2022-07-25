@@ -1,9 +1,8 @@
 package main
 
 import (
-	"context"
+	"fmt"
 	"math/rand"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -25,19 +24,65 @@ func main() {
 
 	// wg.Wait()
 
-	var total int = 12
-	mutex := &sync.Mutex{}
-	ctx, cancel := context.WithCancel(context.Background())
-	for i := 0; i < total; i++ {
-		var t = i
-		go func() {
-			mutex.Lock()
-			cancel()
-			println("the " + strconv.Itoa(t))
-			mutex.Unlock()
-		}()
+	// var total int = 12
+	// mutex := &sync.Mutex{}
+	// ctx, cancel := context.WithCancel(context.Background())
+	// for i := 0; i < total; i++ {
+	// 	var t = i
+	// 	go func() {
+	// 		mutex.Lock()
+	// 		cancel()
+	// 		println("the " + strconv.Itoa(t))
+	// 		mutex.Unlock()
+	// 	}()
+	// }
+	// <-ctx.Done()
+	mu := &sync.Mutex{}
+	cond := sync.NewCond(mu)
+	var b int32 = int32(byte('a'))
+	var e = b + 25
+	ch := make(chan int32)
+	go func() {
+		for b != e {
+			mu.Lock()
+			for b%2 != 1 {
+				cond.Wait()
+			}
+			// println("A")
+			ch <- b
+			if b == e {
+				close(ch)
+			}
+			b++
+			cond.Signal()
+			mu.Unlock()
+			if b >= e {
+				break
+			}
+		}
+	}()
+	go func() {
+		for b != e {
+			mu.Lock()
+			for b%2 != 0 {
+				cond.Wait()
+			}
+			// println("B")
+			ch <- b
+			if b == e {
+				close(ch)
+			}
+			b++
+			cond.Signal()
+			mu.Unlock()
+			if b >= e {
+				break
+			}
+		}
+	}()
+	for ele := range ch {
+		fmt.Println(string(ele))
 	}
-	<-ctx.Done()
 }
 
 type A struct {

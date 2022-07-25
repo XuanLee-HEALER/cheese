@@ -7,7 +7,6 @@ require (
 	github.com/go-mysql-org/go-mysql v1.6.0
 	github.com/labstack/gommon v0.3.1
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129
-	golang.org/x/text v0.3.7
 )
 
 require (
