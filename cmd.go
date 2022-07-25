@@ -1,10 +1,13 @@
 package main
 
 import (
+	"cheese/dbop"
 	"cheese/entity"
 	mouseparser "cheese/mouse_parser"
 	"cheese/tools"
 	"context"
+	"fmt"
+	"sync"
 
 	"github.com/chromedp/chromedp"
 	"github.com/labstack/gommon/log"
@@ -14,18 +17,37 @@ import (
 const roleUrl = "https://bbs.mihoyo.com/ys/obc/channel/map/189/25"
 
 func main() {
-	// const basePath = "./roledetail/"
-	// ru, err := ori.DbInst.SelectAllRoleUrl()
-	// if err != nil {
-	// 	log.Fatal(err)
+	const basePath = "./roledetail/"
+	ru, err := dbop.DbInst.Query(entity.RoleUrlQueryAll, entity.TransToRoleUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ru = ru[16:17]
+	wg := &sync.WaitGroup{}
+	wg.Add(len(ru))
+	rChan := make(chan entity.Role, 1)
+	for _, e := range ru {
+		if fe, ok := e.(entity.RoleUrl); ok {
+			go ParseRolePage(basePath+fe.RoleName+".html", rChan, wg)
+		}
+	}
+	wg.Wait()
+
+	// for {
+	// 	select {
+	// 	case e, cls := <-rChan:
+	// 		fmt.Println(e)
+	// 		if !cls {
+	// 			println("close")
+	// 			close(rChan)
+	// 			break out
+	// 		}
+	// 	default:
+	// 		time.Sleep(time.Millisecond * 1000)
+	// 		println("error")
+	// 	}
 	// }
-	// rChan := make(chan entity.Role, len(ru))
-	// for _, e := range ru {
-	// 	go ParseRolePage(basePath+e.RoleName+".html", rChan)
-	// }
-	// for e := range rChan {
-	// 	fmt.Println(e)
-	// }
+
 	// ctx, cancel := chromedp.NewContext(context.Background())
 	// defer cancel()
 	// fetchRoleHtml(ctx)
@@ -79,14 +101,15 @@ func main() {
 	// }
 }
 
-func ParseRolePage(filename string, ch chan<- entity.Role) {
-	// defer func() {
-	// 	if err := recover(); err != nil {
-	// 		log.Error("parse ", filename, " error occured! ", err)
-	// 		ch <- entity.Role{}
-	// 		close(ch)
-	// 	}
-	// }()
+func ParseRolePage(filename string, ch chan<- entity.Role, wg *sync.WaitGroup) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("parse ", filename, " error occured! ", err)
+			ch <- entity.Role{}
+			close(ch)
+		}
+		wg.Done()
+	}()
 	exData := make(map[string]string)
 
 	p, err := mouseparser.NewParser(filename)
@@ -151,6 +174,39 @@ func ParseRolePage(filename string, ch chan<- entity.Role) {
 
 	for i, e := range keys {
 		exData[e] = values[i]
+	}
+
+	p.Reset()
+
+	attrs = map[string]string{
+		"data-ts": "1655270939914",
+	}
+	_, err = p.ReadTag("div", attrs)
+	if err != nil {
+		log.Error("read growth material value div error")
+		panic(err)
+	}
+
+	attrs = map[string]string{
+		"data-target": "1655270939914",
+		"class":       "obc-tmpl__switch-list",
+	}
+	_, err = p.ReadTag("ul", attrs)
+	if err != nil {
+		log.Error("read growth material value ul error")
+		panic(err)
+	}
+
+	attrs = map[string]string{
+		"class": "obc-tmpl__switch-item",
+	}
+	ns, err = p.ReadTags("li", attrs)
+	if err != nil {
+		log.Error("read growth material value li error")
+		panic(err)
+	}
+	for _, n := range ns {
+		fmt.Println(n.Data)
 	}
 
 	// fmt.Printf("%v", exData)
