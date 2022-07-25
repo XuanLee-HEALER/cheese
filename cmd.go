@@ -32,21 +32,10 @@ func main() {
 		}
 	}
 	wg.Wait()
-
-	// for {
-	// 	select {
-	// 	case e, cls := <-rChan:
-	// 		fmt.Println(e)
-	// 		if !cls {
-	// 			println("close")
-	// 			close(rChan)
-	// 			break out
-	// 		}
-	// 	default:
-	// 		time.Sleep(time.Millisecond * 1000)
-	// 		println("error")
-	// 	}
-	// }
+	close(rChan)
+	for e := range rChan {
+		fmt.Println(e)
+	}
 
 	// ctx, cancel := chromedp.NewContext(context.Background())
 	// defer cancel()
@@ -105,8 +94,6 @@ func ParseRolePage(filename string, ch chan<- entity.Role, wg *sync.WaitGroup) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Error("parse ", filename, " error occured! ", err)
-			ch <- entity.Role{}
-			close(ch)
 		}
 		wg.Done()
 	}()
@@ -206,7 +193,26 @@ func ParseRolePage(filename string, ch chan<- entity.Role, wg *sync.WaitGroup) {
 		panic(err)
 	}
 	for _, n := range ns {
-		fmt.Println(n.Data)
+		p.SetHead(n)
+
+		attrs = map[string]string{}
+		_, _ = p.ReadTag("ul", attrs)
+		attrs = map[string]string{
+			"class": "obc-tmpl__icon-text-num",
+		}
+		tns, _ := p.ReadTags("div", attrs)
+		for _, tn := range tns {
+			// fmt.Println(tn)
+			p.SetHead(tn)
+			attrs = map[string]string{}
+			spans, _ := p.ReadTags("span", attrs)
+			for _, span := range spans {
+				materialNameQty, _ := p.ReadTextFrom(span)
+				fmt.Print(materialNameQty)
+			}
+			fmt.Println()
+		}
+		fmt.Println()
 	}
 
 	// fmt.Printf("%v", exData)
