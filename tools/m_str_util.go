@@ -12,3 +12,12 @@ func FindAll(str string, reg string) []string {
 	}
 	return []string{}
 }
+
+func FindUrlSuffix(url string) string {
+	const reg = `.+(\.\w+)$`
+	re, _ := regexp.Compile(reg)
+	if matched := re.FindStringSubmatch(url); len(matched) > 0 {
+		return matched[1]
+	}
+	return ""
+}
